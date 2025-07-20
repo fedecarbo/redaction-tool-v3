@@ -3,6 +3,8 @@
 import dynamic from 'next/dynamic'
 import { RedactionProvider } from '@/context/RedactionContext'
 import { Toolbar } from '@/components/Toolbar'
+import { ConfirmationToast } from '@/components/ConfirmationToast'
+import { useRedaction } from '@/context/RedactionContext'
 
 // Import PDFViewer with no SSR to avoid server-side rendering issues
 const PDFViewer = dynamic(() => import('@/components/PDFViewer'), {
@@ -22,36 +24,53 @@ const PDFViewer = dynamic(() => import('@/components/PDFViewer'), {
   )
 })
 
+function AppContent() {
+  const { state, hideToast } = useRedaction();
+  const { toast } = state;
+
+  return (
+    <main className="min-h-screen bg-background p-4 lg:p-8">
+      <div className="mx-auto max-w-7xl">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-foreground mb-2">
+            PDF Redaction Tool
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            View and redact sensitive information in PDF documents
+          </p>
+        </div>
+        
+        {/* Toolbar for redaction controls */}
+        <div className="mb-6">
+          <Toolbar />
+        </div>
+        
+        <div className="w-full">
+          <PDFViewer />
+        </div>
+        
+        <div className="mt-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            Use the toolbar above to toggle redaction mode and the page controls to navigate
+          </p>
+        </div>
+      </div>
+
+      {/* Confirmation Toast */}
+      <ConfirmationToast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
+    </main>
+  )
+}
+
 export default function Home() {
   return (
     <RedactionProvider>
-      <main className="min-h-screen bg-background p-4 lg:p-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-foreground mb-2">
-              PDF Redaction Tool
-            </h1>
-            <p className="text-muted-foreground text-lg">
-              View and redact sensitive information in PDF documents
-            </p>
-          </div>
-          
-          {/* Toolbar for redaction controls */}
-          <div className="mb-6">
-            <Toolbar />
-          </div>
-          
-          <div className="w-full">
-            <PDFViewer />
-          </div>
-          
-          <div className="mt-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              Use the toolbar above to toggle redaction mode and the page controls to navigate
-            </p>
-          </div>
-        </div>
-      </main>
+      <AppContent />
     </RedactionProvider>
   )
 } 

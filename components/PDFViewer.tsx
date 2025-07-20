@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react'
 import { RedactionLayer } from '@/components/RedactionLayer'
+import { useRedaction } from '@/context/RedactionContext'
 
 // Set up PDF.js worker with local file
 pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
@@ -27,6 +28,9 @@ interface PDFDocumentProxy {
 }
 
 export default function PDFViewer({ file = '/sample.pdf' }: PDFViewerProps) {
+  const { state } = useRedaction();
+  const { currentView, redactedPDF } = state;
+  
   const [numPages, setNumPages] = useState<number>(0)
   const [pageNumber, setPageNumber] = useState<number>(1)
   const [scale, setScale] = useState<number>(ZOOM_CONFIG.DEFAULT)
@@ -35,6 +39,12 @@ export default function PDFViewer({ file = '/sample.pdf' }: PDFViewerProps) {
   const [pageDimensions, setPageDimensions] = useState<{ width: number; height: number }>({ width: 800, height: 600 })
   
   const pageRef = useRef<HTMLDivElement>(null)
+
+  // Determine which PDF to show based on current view
+  const currentPdfFile = currentView === 'redacted' && redactedPDF ? 
+    // For MVP, we'll use the original file since we don't have a way to display the redacted PDF yet
+    // In a real implementation, this would be a blob URL created from the redacted PDF data
+    file : file;
 
   const onDocumentLoadSuccess = useCallback(({ numPages }: PDFDocumentProxy) => {
     setNumPages(numPages)
@@ -81,7 +91,14 @@ export default function PDFViewer({ file = '/sample.pdf' }: PDFViewerProps) {
     <Card className="w-full max-w-5xl mx-auto">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xl font-semibold">PDF Viewer</CardTitle>
+          <CardTitle className="text-xl font-semibold">
+            PDF Viewer
+            {currentView === 'redacted' && redactedPDF && (
+              <span className="ml-2 text-sm font-normal text-purple-600 bg-purple-50 px-2 py-1 rounded">
+                Redacted Version
+              </span>
+            )}
+          </CardTitle>
           <div className="flex items-center gap-2">
             {/* Zoom Controls */}
             <Button
@@ -161,7 +178,7 @@ export default function PDFViewer({ file = '/sample.pdf' }: PDFViewerProps) {
           {!error && (
             <div className="border rounded-lg shadow-sm bg-white p-4 max-w-full overflow-auto">
               <Document
-                file={file}
+                file={currentPdfFile}
                 onLoadSuccess={onDocumentLoadSuccess}
                 onLoadError={onDocumentLoadError}
                 loading={<div>Loading document...</div>}
