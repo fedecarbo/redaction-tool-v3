@@ -17,8 +17,8 @@ describe('Toolbar', () => {
       </TestWrapper>
     );
     
-    const button = screen.getByRole('button');
-    expect(button).toHaveTextContent('View Mode');
+    const button = screen.getByText('View Mode');
+    expect(button).toBeInTheDocument();
     expect(screen.getByText('Click Redact Mode to start marking sensitive areas')).toBeInTheDocument();
   });
 
@@ -29,10 +29,10 @@ describe('Toolbar', () => {
       </TestWrapper>
     );
     
-    const button = screen.getByRole('button');
+    const button = screen.getByText('View Mode');
     fireEvent.click(button);
     
-    expect(button).toHaveTextContent('Redact Mode ON');
+    expect(screen.getByText('Redact Mode ON')).toBeInTheDocument();
     expect(screen.getByText('Click and drag to select areas to redact')).toBeInTheDocument();
   });
 
@@ -43,15 +43,15 @@ describe('Toolbar', () => {
       </TestWrapper>
     );
     
-    const button = screen.getByRole('button');
+    const button = screen.getByText('View Mode');
     
     // Toggle to redact mode
     fireEvent.click(button);
-    expect(button).toHaveTextContent('Redact Mode ON');
+    expect(screen.getByText('Redact Mode ON')).toBeInTheDocument();
     
     // Toggle back to view mode
-    fireEvent.click(button);
-    expect(button).toHaveTextContent('View Mode');
+    fireEvent.click(screen.getByText('Redact Mode ON'));
+    expect(screen.getByText('View Mode')).toBeInTheDocument();
     expect(screen.getByText('Click Redact Mode to start marking sensitive areas')).toBeInTheDocument();
   });
 
@@ -62,7 +62,7 @@ describe('Toolbar', () => {
       </TestWrapper>
     );
     
-    const button = screen.getByRole('button');
+    const button = screen.getByText('View Mode');
     
     // Check initial view mode icon (Eye icon)
     expect(button.querySelector('svg')).toBeInTheDocument();
@@ -71,7 +71,8 @@ describe('Toolbar', () => {
     fireEvent.click(button);
     
     // Check redact mode icon (Scissors icon)
-    expect(button.querySelector('svg')).toBeInTheDocument();
+    const redactButton = screen.getByText('Redact Mode ON');
+    expect(redactButton.querySelector('svg')).toBeInTheDocument();
   });
 
   test('should have correct styling classes for different modes', () => {
@@ -81,7 +82,7 @@ describe('Toolbar', () => {
       </TestWrapper>
     );
     
-    const button = screen.getByRole('button');
+    const button = screen.getByText('View Mode');
     
     // View mode styling
     expect(button).toHaveClass('border-red-200', 'text-red-600');
@@ -90,7 +91,8 @@ describe('Toolbar', () => {
     fireEvent.click(button);
     
     // Redact mode styling
-    expect(button).toHaveClass('bg-red-600', 'text-white');
+    const redactButton = screen.getByText('Redact Mode ON');
+    expect(redactButton).toHaveClass('bg-red-600', 'text-white');
   });
 
   test('should show pulsing indicator in redact mode', () => {
@@ -100,7 +102,7 @@ describe('Toolbar', () => {
       </TestWrapper>
     );
     
-    const button = screen.getByRole('button');
+    const button = screen.getByText('View Mode');
     
     // Initially no pulse
     const initialIndicator = document.querySelector('.animate-pulse');
@@ -133,9 +135,8 @@ describe('Toolbar', () => {
       </TestWrapper>
     );
     
-    const button = screen.getByRole('button');
+    const button = screen.getByText('View Mode');
     expect(button).toBeInTheDocument();
-    // Button component doesn't set type attribute explicitly but is accessible via role
     expect(button.tagName).toBe('BUTTON');
   });
 
@@ -326,21 +327,20 @@ describe('Toolbar', () => {
     fireEvent.click(applyButton);
     
     // Dialog should be visible
-    expect(screen.getByText('This will permanently apply all redactions to the PDF. The original content will be unrecoverable. Are you sure you want to continue?')).toBeInTheDocument();
-    expect(screen.getByText('This will permanently apply all redactions to the PDF. The original content will be unrecoverable. Are you sure you want to continue?')).toBeInTheDocument();
+    expect(screen.getByText('This will permanently apply all redactions to the PDF. The original content will be unrecoverable and cannot be undone. Are you sure you want to continue?')).toBeInTheDocument();
     
     // Cancel dialog
     const cancelButton = screen.getByText('Cancel');
     fireEvent.click(cancelButton);
     
     // Dialog should be hidden
-    expect(screen.queryByText('This will permanently apply all redactions to the PDF. The original content will be unrecoverable. Are you sure you want to continue?')).not.toBeInTheDocument();
+    expect(screen.queryByText('This will permanently apply all redactions to the PDF. The original content will be unrecoverable and cannot be undone. Are you sure you want to continue?')).not.toBeInTheDocument();
   });
 
   test('should disable undo and clear buttons after applying redactions', async () => {
     // Create a test component that combines context and toolbar
     const TestComponent = () => {
-      const { addRectangle } = useRedaction();
+      const { addRectangle, setOriginalPDF } = useRedaction();
       
       const addTestRectangle = () => {
         addRectangle({
@@ -352,12 +352,21 @@ describe('Toolbar', () => {
           pageNumber: 1,
         });
       };
+
+      const setupPDFData = () => {
+        // Mock PDF data
+        const mockPDFData = new Uint8Array([1, 2, 3, 4, 5]);
+        setOriginalPDF(mockPDFData);
+      };
       
       return (
         <div>
           <Toolbar />
           <button onClick={addTestRectangle} data-testid="add-rectangle">
             Add Rectangle
+          </button>
+          <button onClick={setupPDFData} data-testid="setup-pdf">
+            Setup PDF
           </button>
         </div>
       );
@@ -368,6 +377,10 @@ describe('Toolbar', () => {
         <TestComponent />
       </TestWrapper>
     );
+    
+    // Setup PDF data first
+    const setupButton = screen.getByTestId('setup-pdf');
+    fireEvent.click(setupButton);
     
     // Toggle to redact mode and add rectangle
     const redactButton = screen.getByText('View Mode');
@@ -398,12 +411,14 @@ describe('Toolbar', () => {
     const confirmButton = screen.getByTestId('confirm-btn');
     fireEvent.click(confirmButton);
     
-    // Wait for async operation
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Buttons should now be disabled
-    expect(undoButton).toBeDisabled();
-    expect(clearButton).toBeDisabled();
+    // Wait for async operation and state update
+    await waitFor(() => {
+      // After applying redactions, the buttons should be disabled
+      const updatedUndoButton = screen.getByText('Undo');
+      const updatedClearButton = screen.getByText('Clear All');
+      expect(updatedUndoButton).toBeDisabled();
+      expect(updatedClearButton).toBeDisabled();
+    }, { timeout: 3000 });
   });
 
   test('should handle view toggle functionality', () => {
@@ -423,18 +438,18 @@ describe('Toolbar', () => {
     // Initially should show Original View
     expect(screen.getByText('Original View')).toBeInTheDocument();
     
-    // Click view toggle
+    // Click view toggle to open dropdown
     const viewToggleButton = screen.getByText('Original View');
     fireEvent.click(viewToggleButton);
     
-    // Should now show Redacted View
+    // Should show dropdown options
     expect(screen.getByText('Redacted View')).toBeInTheDocument();
     
-    // Click again to toggle back
+    // Click Redacted View to switch
     fireEvent.click(screen.getByText('Redacted View'));
     
-    // Should show Original View again
-    expect(screen.getByText('Original View')).toBeInTheDocument();
+    // Should show Redacted View in button
+    expect(screen.getByText('Redacted View')).toBeInTheDocument();
   });
 
   test('should have proper accessibility attributes for new buttons', async () => {

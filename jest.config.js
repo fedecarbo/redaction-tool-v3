@@ -20,7 +20,7 @@ const customJestConfig = {
     '^@/(.*)$': '<rootDir>/$1',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(react-pdf)/)',
+    'node_modules/(?!(react-pdf|pdfjs-dist)/)',
   ],
 }
 

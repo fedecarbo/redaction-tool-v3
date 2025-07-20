@@ -11,9 +11,12 @@ export interface RedactionState {
   isRedactMode: boolean;
   rectanglesByPage: Map<number, RedactionRectangle[]>;
   currentDrawing: RedactionRectangle | null;
-  redactedPDF: Uint8Array | null;  // Stores the redacted PDF binary
+  originalPDF: Uint8Array | null;  // Store original PDF binary
+  redactedPDF: Uint8Array | null;  // Store redacted PDF binary
   currentView: 'original' | 'redacted';
   canUndo: boolean;
+  isProcessing: boolean;  // For PDF processing state
+  redactionsApplied: boolean;  // Track if redactions have been applied
   toast: {
     isVisible: boolean;
     message: string;
@@ -34,4 +37,6 @@ export interface RedactionContextType {
   toggleView: () => void;
   showToast: (message: string, type: 'success' | 'error') => void;
   hideToast: () => void;
+  clearPDFs: () => void;
+  setOriginalPDF: (pdf: Uint8Array) => void;
 } 

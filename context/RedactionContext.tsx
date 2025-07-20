@@ -2,7 +2,14 @@
 
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 import { RedactionState, RedactionContextType, RedactionRectangle } from '@/types/redaction';
-import { applyRedactions as applyRedactionsToPDF } from '@/utils/redactionEngine';
+
+// Dynamic import to avoid SSR issues
+let generateRedactedPDF: any = null;
+if (typeof window !== 'undefined') {
+  import('@/utils/redactionEngine').then(module => {
+    generateRedactedPDF = module.generateRedactedPDF;
+  });
+}
 
 // Action types for reducer
 type RedactionAction = 
@@ -13,20 +20,27 @@ type RedactionAction =
   | { type: 'SET_CURRENT_DRAWING'; rectangle: RedactionRectangle | null }
   | { type: 'UNDO_LAST_RECTANGLE' }
   | { type: 'CLEAR_ALL_RECTANGLES' }
+  | { type: 'SET_ORIGINAL_PDF'; pdf: Uint8Array }
   | { type: 'SET_REDACTED_PDF'; pdf: Uint8Array }
   | { type: 'TOGGLE_VIEW' }
   | { type: 'SET_CAN_UNDO'; canUndo: boolean }
+  | { type: 'SET_PROCESSING'; isProcessing: boolean }
   | { type: 'SHOW_TOAST'; message: string; toastType: 'success' | 'error' }
-  | { type: 'HIDE_TOAST' };
+  | { type: 'HIDE_TOAST' }
+  | { type: 'CLEAR_PDFS' }
+  | { type: 'SET_REDACTIONS_APPLIED'; applied: boolean };
 
 // Initial state
 const initialState: RedactionState = {
   isRedactMode: false,
   rectanglesByPage: new Map(),
   currentDrawing: null,
+  originalPDF: null,
   redactedPDF: null,
   currentView: 'original',
   canUndo: false,
+  isProcessing: false,
+  redactionsApplied: false,
   toast: {
     isVisible: false,
     message: '',
@@ -127,6 +141,12 @@ function redactionReducer(state: RedactionState, action: RedactionAction): Redac
         canUndo: false,
       };
 
+    case 'SET_ORIGINAL_PDF':
+      return {
+        ...state,
+        originalPDF: action.pdf,
+      };
+
     case 'SET_REDACTED_PDF':
       return {
         ...state,
@@ -143,6 +163,12 @@ function redactionReducer(state: RedactionState, action: RedactionAction): Redac
       return {
         ...state,
         canUndo: action.canUndo,
+      };
+
+    case 'SET_PROCESSING':
+      return {
+        ...state,
+        isProcessing: action.isProcessing,
       };
 
     case 'SHOW_TOAST':
@@ -162,6 +188,19 @@ function redactionReducer(state: RedactionState, action: RedactionAction): Redac
           ...state.toast,
           isVisible: false,
         },
+      };
+
+    case 'CLEAR_PDFS':
+      return {
+        ...state,
+        originalPDF: null,
+        redactedPDF: null,
+      };
+
+    case 'SET_REDACTIONS_APPLIED':
+      return {
+        ...state,
+        redactionsApplied: action.applied,
       };
 
     default:
@@ -220,31 +259,30 @@ export function RedactionProvider({ children }: RedactionProviderProps) {
 
   const applyRedactions = async (): Promise<void> => {
     try {
-      // For MVP, since we don't have access to the original PDF data from PDFViewer,
-      // we'll create a minimal valid PDF document instead of using mock data
-      const { PDFDocument, rgb } = await import('pdf-lib');
+      // Set processing state
+      dispatch({ type: 'SET_PROCESSING', isProcessing: true });
       
-      // Create a new PDF document with a single page
-      const pdfDoc = await PDFDocument.create();
-      const page = pdfDoc.addPage([612, 792]); // Standard letter size
+      // Check if we have the original PDF data
+      if (!state.originalPDF) {
+        throw new Error('No original PDF data available. Please reload the page and try again.');
+      }
       
-      // Add some sample content to the page
-      page.drawText('Sample PDF Document', {
-        x: 50,
-        y: 750,
-        size: 20,
-        color: rgb(0, 0, 0),
-      });
+      // Ensure we're in browser environment
+      if (typeof window === 'undefined') {
+        throw new Error('PDF redaction is only available in browser environment');
+      }
       
-      page.drawText('This is a mock PDF for demonstration purposes.', {
-        x: 50,
-        y: 720,
-        size: 12,
-        color: rgb(0, 0, 0),
-      });
+      // Dynamically import the redaction engine if not already loaded
+      if (!generateRedactedPDF) {
+        const module = await import('@/utils/redactionEngine');
+        generateRedactedPDF = module.generateRedactedPDF;
+      }
       
-      // Apply redactions using the RedactionEngine
-      const redactedPdfData = await applyRedactionsToPDF(await pdfDoc.save(), state.rectanglesByPage);
+      // Apply redactions using the RedactionEngine with the actual PDF data
+      const redactedPdfData = await generateRedactedPDF(
+        state.originalPDF, 
+        state.rectanglesByPage
+      );
       
       // Store the redacted PDF in state
       dispatch({ type: 'SET_REDACTED_PDF', pdf: redactedPdfData });
@@ -254,12 +292,18 @@ export function RedactionProvider({ children }: RedactionProviderProps) {
       
       // Disable undo/clear after applying redactions
       dispatch({ type: 'SET_CAN_UNDO', canUndo: false });
+      dispatch({ type: 'SET_REDACTIONS_APPLIED', applied: true });
+      
+      // Clear processing state
+      dispatch({ type: 'SET_PROCESSING', isProcessing: false });
       
       // Show success toast
       dispatch({ type: 'SHOW_TOAST', message: 'Redactions applied successfully!', toastType: 'success' });
       
     } catch (error) {
       console.error('Failed to apply redactions:', error);
+      // Clear processing state
+      dispatch({ type: 'SET_PROCESSING', isProcessing: false });
       // Show error toast
       dispatch({ type: 'SHOW_TOAST', message: 'Failed to apply redactions. Please try again.', toastType: 'error' });
       throw error;
@@ -278,6 +322,14 @@ export function RedactionProvider({ children }: RedactionProviderProps) {
     dispatch({ type: 'HIDE_TOAST' });
   };
 
+  const clearPDFs = () => {
+    dispatch({ type: 'CLEAR_PDFS' });
+  };
+
+  const setOriginalPDF = (pdf: Uint8Array) => {
+    dispatch({ type: 'SET_ORIGINAL_PDF', pdf });
+  };
+
   const value: RedactionContextType = {
     state,
     toggleRedactMode,
@@ -291,6 +343,8 @@ export function RedactionProvider({ children }: RedactionProviderProps) {
     toggleView,
     showToast,
     hideToast,
+    clearPDFs, // <--- New action for memory management
+    setOriginalPDF,
   };
 
   return (

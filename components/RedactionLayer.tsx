@@ -37,22 +37,22 @@ export function RedactionLayer({
     const relativeY = screenY - rect.top;
     
     // Convert to PDF coordinate system (0-1 range relative to PDF dimensions)
-    const pdfX = (relativeX / rect.width) * pdfDimensions.width;
-    const pdfY = (relativeY / rect.height) * pdfDimensions.height;
+    const pdfX = relativeX / rect.width;
+    const pdfY = relativeY / rect.height;
     
     return { x: pdfX, y: pdfY };
-  }, [pdfDimensions]);
+  }, []);
 
   // Convert PDF coordinates to screen coordinates for rendering
   const pdfToScreenCoords = useCallback((pdfX: number, pdfY: number) => {
     if (!layerRef.current) return { x: 0, y: 0 };
     
     const rect = layerRef.current.getBoundingClientRect();
-    const screenX = (pdfX / pdfDimensions.width) * rect.width;
-    const screenY = (pdfY / pdfDimensions.height) * rect.height;
+    const screenX = pdfX * rect.width;
+    const screenY = pdfY * rect.height;
     
     return { x: screenX, y: screenY };
-  }, [pdfDimensions]);
+  }, []);
 
   const handleMouseDown = useCallback((event: React.MouseEvent) => {
     if (!isRedactMode) return;
@@ -113,8 +113,8 @@ export function RedactionLayer({
     const width = Math.abs(currentX - startPoint.x);
     const height = Math.abs(currentY - startPoint.y);
     
-    // Only add rectangle if it has meaningful size (at least 5x5 pixels)
-    if (width > 5 && height > 5) {
+    // Only add rectangle if it has meaningful size (at least 0.01 or 1% of page size)
+    if (width > 0.01 && height > 0.01) {
       const finalRect: RedactionRectangle = {
         id: `rect-${currentPage}-${Date.now()}`,
         x,
@@ -147,10 +147,11 @@ export function RedactionLayer({
     if (!layerRef.current) return null;
     
     const containerRect = layerRef.current.getBoundingClientRect();
-    const screenX = (rect.x / pdfDimensions.width) * containerRect.width;
-    const screenY = (rect.y / pdfDimensions.height) * containerRect.height;
-    const screenWidth = (rect.width / pdfDimensions.width) * containerRect.width;
-    const screenHeight = (rect.height / pdfDimensions.height) * containerRect.height;
+    // Convert 0-1 range coordinates to screen coordinates
+    const screenX = rect.x * containerRect.width;
+    const screenY = rect.y * containerRect.height;
+    const screenWidth = rect.width * containerRect.width;
+    const screenHeight = rect.height * containerRect.height;
     
     return (
       <div
