@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react'
+import { RedactionLayer } from '@/components/RedactionLayer'
 
 // Set up PDF.js worker with local file
 pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
@@ -31,11 +32,23 @@ export default function PDFViewer({ file = '/sample.pdf' }: PDFViewerProps) {
   const [scale, setScale] = useState<number>(ZOOM_CONFIG.DEFAULT)
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
+  const [pageDimensions, setPageDimensions] = useState<{ width: number; height: number }>({ width: 800, height: 600 })
+  
+  const pageRef = useRef<HTMLDivElement>(null)
 
   const onDocumentLoadSuccess = useCallback(({ numPages }: PDFDocumentProxy) => {
     setNumPages(numPages)
     setLoading(false)
     setError(null)
+  }, [])
+
+  const onPageLoadSuccess = useCallback((page: any) => {
+    // Update page dimensions for RedactionLayer coordinate mapping
+    const viewport = page.getViewport({ scale: 1 });
+    setPageDimensions({
+      width: viewport.width,
+      height: viewport.height
+    });
   }, [])
 
   const onDocumentLoadError = useCallback((error: Error) => {
@@ -153,12 +166,25 @@ export default function PDFViewer({ file = '/sample.pdf' }: PDFViewerProps) {
                 onLoadError={onDocumentLoadError}
                 loading={<div>Loading document...</div>}
               >
-                <Page
-                  pageNumber={pageNumber}
-                  scale={scale}
-                  loading={<div>Loading page...</div>}
-                  className="max-w-full"
-                />
+                <div ref={pageRef} className="relative inline-block">
+                  <Page
+                    pageNumber={pageNumber}
+                    scale={scale}
+                    onLoadSuccess={onPageLoadSuccess}
+                    loading={<div>Loading page...</div>}
+                    className="max-w-full"
+                  />
+                  
+                  {/* Overlay RedactionLayer on top of PDF page */}
+                  <RedactionLayer
+                    currentPage={pageNumber}
+                    pdfDimensions={{
+                      width: pageDimensions.width * scale,
+                      height: pageDimensions.height * scale
+                    }}
+                    className="absolute inset-0"
+                  />
+                </div>
               </Document>
             </div>
           )}

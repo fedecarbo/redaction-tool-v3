@@ -1,6 +1,7 @@
 import React from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import PDFViewer from '@/components/PDFViewer'
+import { RedactionProvider } from '@/context/RedactionContext'
 
 // Mock react-pdf for responsive tests
 jest.mock('react-pdf', () => ({
@@ -67,6 +68,11 @@ const mockMatchMedia = (queries: Record<string, boolean>) => {
   })
 }
 
+// Wrapper component for testing with RedactionProvider
+const TestWrapper = ({ children }: { children: React.ReactNode }) => (
+  <RedactionProvider>{children}</RedactionProvider>
+)
+
 describe('Responsive Design Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks()
@@ -83,7 +89,7 @@ describe('Responsive Design Tests', () => {
     })
 
     it('should render properly on desktop layout', async () => {
-      render(<PDFViewer />)
+      render(<PDFViewer />, { wrapper: TestWrapper })
 
       await waitFor(() => {
         expect(screen.getByText('Page 1 of 5')).toBeInTheDocument()
@@ -107,7 +113,7 @@ describe('Responsive Design Tests', () => {
     })
 
     it('should handle zoom controls appropriately on desktop', async () => {
-      render(<PDFViewer />)
+      render(<PDFViewer />, { wrapper: TestWrapper })
 
       await waitFor(() => {
         expect(screen.getByText('Page 1 of 5')).toBeInTheDocument()
@@ -124,7 +130,7 @@ describe('Responsive Design Tests', () => {
     })
 
     it('should display page thumbnails in horizontal layout on desktop', async () => {
-      render(<PDFViewer />)
+      render(<PDFViewer />, { wrapper: TestWrapper })
 
       await waitFor(() => {
         expect(screen.getByText('Page Navigation')).toBeInTheDocument()
@@ -152,7 +158,7 @@ describe('Responsive Design Tests', () => {
     })
 
     it('should render properly on tablet layout', async () => {
-      render(<PDFViewer />)
+      render(<PDFViewer />, { wrapper: TestWrapper })
 
       await waitFor(() => {
         expect(screen.getByText('Page 1 of 5')).toBeInTheDocument()
@@ -170,7 +176,7 @@ describe('Responsive Design Tests', () => {
     })
 
     it('should maintain usable touch targets on tablet', async () => {
-      render(<PDFViewer />)
+      render(<PDFViewer />, { wrapper: TestWrapper })
 
       await waitFor(() => {
         expect(screen.getByText('Page 1 of 5')).toBeInTheDocument()
@@ -188,7 +194,7 @@ describe('Responsive Design Tests', () => {
     })
 
     it('should handle orientation changes gracefully', async () => {
-      render(<PDFViewer />)
+      render(<PDFViewer />, { wrapper: TestWrapper })
 
       await waitFor(() => {
         expect(screen.getByText('Page 1 of 5')).toBeInTheDocument()
@@ -216,7 +222,7 @@ describe('Responsive Design Tests', () => {
     })
 
     it('should adapt layout for smaller screens', async () => {
-      render(<PDFViewer />)
+      render(<PDFViewer />, { wrapper: TestWrapper })
 
       await waitFor(() => {
         expect(screen.getByText('Page 1 of 5')).toBeInTheDocument()
@@ -232,7 +238,7 @@ describe('Responsive Design Tests', () => {
     })
 
     it('should maintain proper spacing on smaller screens', async () => {
-      render(<PDFViewer />)
+      render(<PDFViewer />, { wrapper: TestWrapper })
 
       await waitFor(() => {
         expect(screen.getByText('Page Navigation')).toBeInTheDocument()
@@ -259,7 +265,7 @@ describe('Responsive Design Tests', () => {
       for (const viewport of viewports) {
         mockWindowSize(viewport.width, viewport.height)
         
-        const { unmount } = render(<PDFViewer />)
+        const { unmount } = render(<PDFViewer />, { wrapper: TestWrapper })
 
         await waitFor(() => {
           expect(screen.getByText('Page 1 of 5')).toBeInTheDocument()
@@ -277,7 +283,7 @@ describe('Responsive Design Tests', () => {
     })
 
     it('should handle zoom appropriately across devices', async () => {
-      const { rerender } = render(<PDFViewer />)
+      const { rerender } = render(<PDFViewer />, { wrapper: TestWrapper })
 
       await waitFor(() => {
         expect(screen.getByText('Page 1 of 5')).toBeInTheDocument()
@@ -285,12 +291,12 @@ describe('Responsive Design Tests', () => {
 
       // Test zoom on desktop
       mockWindowSize(1200, 800)
-      rerender(<PDFViewer />)
+      rerender(<TestWrapper><PDFViewer /></TestWrapper>)
       expect(screen.getByText('120%')).toBeInTheDocument()
 
       // Test zoom on tablet
       mockWindowSize(768, 1024)
-      rerender(<PDFViewer />)
+      rerender(<TestWrapper><PDFViewer /></TestWrapper>)
       expect(screen.getByText('120%')).toBeInTheDocument()
 
       // Zoom controls should be accessible on all devices
@@ -301,7 +307,7 @@ describe('Responsive Design Tests', () => {
 
   describe('Content Overflow Handling', () => {
     it('should handle PDF content overflow properly', async () => {
-      render(<PDFViewer />)
+      render(<PDFViewer />, { wrapper: TestWrapper })
 
       await waitFor(() => {
         expect(screen.getByText('Page 1 of 5')).toBeInTheDocument()
@@ -315,7 +321,7 @@ describe('Responsive Design Tests', () => {
     it('should handle thumbnail overflow on small screens', async () => {
       mockWindowSize(400, 600) // Very small screen
       
-      render(<PDFViewer />)
+      render(<PDFViewer />, { wrapper: TestWrapper })
 
       await waitFor(() => {
         expect(screen.getByText('Page Navigation')).toBeInTheDocument()
@@ -336,7 +342,7 @@ describe('Responsive Design Tests', () => {
     it('should maintain touch target accessibility on touch devices', async () => {
       mockWindowSize(768, 1024) // Tablet size
       
-      render(<PDFViewer />)
+      render(<PDFViewer />, { wrapper: TestWrapper })
 
       await waitFor(() => {
         expect(screen.getByText('Page 1 of 5')).toBeInTheDocument()
@@ -355,7 +361,7 @@ describe('Responsive Design Tests', () => {
     })
 
     it('should support keyboard navigation on all devices', async () => {
-      render(<PDFViewer />)
+      render(<PDFViewer />, { wrapper: TestWrapper })
 
       await waitFor(() => {
         expect(screen.getByText('Page 1 of 5')).toBeInTheDocument()

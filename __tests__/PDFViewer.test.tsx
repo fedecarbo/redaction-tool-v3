@@ -2,6 +2,7 @@ import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import PDFViewer from '@/components/PDFViewer'
+import { RedactionProvider } from '@/context/RedactionContext'
 
 // Mock react-pdf with more control
 jest.mock('react-pdf', () => {
@@ -45,6 +46,11 @@ jest.mock('lucide-react', () => ({
   RotateCcw: () => React.createElement('span', { 'data-testid': 'rotate-ccw' }, 'RotateCcw'),
 }))
 
+// Wrapper component for testing with RedactionProvider
+const TestWrapper = ({ children }: { children: React.ReactNode }) => (
+  <RedactionProvider>{children}</RedactionProvider>
+)
+
 describe('PDFViewer Component', () => {
   const user = userEvent.setup()
 
@@ -54,20 +60,20 @@ describe('PDFViewer Component', () => {
 
   describe('Initial Rendering', () => {
     it('should render with default PDF file', () => {
-      render(<PDFViewer />)
+      render(<PDFViewer />, { wrapper: TestWrapper })
       
       expect(screen.getByText('PDF Viewer')).toBeInTheDocument()
       expect(screen.getByText('Loading PDF...')).toBeInTheDocument()
     })
 
     it('should render with custom PDF file', () => {
-      render(<PDFViewer file="/custom.pdf" />)
+      render(<PDFViewer file="/custom.pdf" />, { wrapper: TestWrapper })
       
       expect(screen.getByText('PDF Viewer')).toBeInTheDocument()
     })
 
     it('should display loading state initially', () => {
-      render(<PDFViewer />)
+      render(<PDFViewer />, { wrapper: TestWrapper })
       
       expect(screen.getByText('Loading PDF...')).toBeInTheDocument()
     })
@@ -75,18 +81,20 @@ describe('PDFViewer Component', () => {
 
   describe('PDF Loading Success', () => {
     it('should display PDF after successful load', async () => {
-      render(<PDFViewer />)
+      render(<PDFViewer />, { wrapper: TestWrapper })
       
       await waitFor(() => {
         expect(screen.getByTestId('pdf-document')).toBeInTheDocument()
       })
       
-      expect(screen.getByText('Page 1 of 5')).toBeInTheDocument()
+      await waitFor(() => {
+        expect(screen.getByText('Page 1 of 5')).toBeInTheDocument()
+      })
       expect(screen.getByTestId('pdf-page-1')).toBeInTheDocument()
     })
 
     it('should show page navigation controls after load', async () => {
-      render(<PDFViewer />)
+      render(<PDFViewer />, { wrapper: TestWrapper })
       
       await waitFor(() => {
         expect(screen.getByText('Page 1 of 5')).toBeInTheDocument()
@@ -97,7 +105,7 @@ describe('PDFViewer Component', () => {
     })
 
     it('should show page thumbnails for multi-page PDFs', async () => {
-      render(<PDFViewer />)
+      render(<PDFViewer />, { wrapper: TestWrapper })
       
       await waitFor(() => {
         expect(screen.getByText('Page Navigation')).toBeInTheDocument()
@@ -112,7 +120,7 @@ describe('PDFViewer Component', () => {
 
   describe('PDF Loading Error', () => {
     it('should display error message when PDF fails to load', async () => {
-      render(<PDFViewer file="/error.pdf" />)
+      render(<PDFViewer file="/error.pdf" />, { wrapper: TestWrapper })
       
       await waitFor(() => {
         expect(screen.getByText('Error loading PDF')).toBeInTheDocument()
@@ -122,7 +130,7 @@ describe('PDFViewer Component', () => {
     })
 
     it('should not show navigation controls on error', async () => {
-      render(<PDFViewer file="/error.pdf" />)
+      render(<PDFViewer file="/error.pdf" />, { wrapper: TestWrapper })
       
       await waitFor(() => {
         expect(screen.getByText('Error loading PDF')).toBeInTheDocument()
@@ -135,7 +143,7 @@ describe('PDFViewer Component', () => {
 
   describe('Page Navigation', () => {
     beforeEach(async () => {
-      render(<PDFViewer />)
+      render(<PDFViewer />, { wrapper: TestWrapper })
       await waitFor(() => {
         expect(screen.getByText('Page 1 of 5')).toBeInTheDocument()
       })
@@ -205,7 +213,7 @@ describe('PDFViewer Component', () => {
 
   describe('Zoom Controls', () => {
     beforeEach(async () => {
-      render(<PDFViewer />)
+      render(<PDFViewer />, { wrapper: TestWrapper })
       await waitFor(() => {
         expect(screen.getByText('Page 1 of 5')).toBeInTheDocument()
       })
@@ -282,7 +290,7 @@ describe('PDFViewer Component', () => {
 
   describe('Accessibility', () => {
     beforeEach(async () => {
-      render(<PDFViewer />)
+      render(<PDFViewer />, { wrapper: TestWrapper })
       await waitFor(() => {
         expect(screen.getByText('Page 1 of 5')).toBeInTheDocument()
       })
@@ -312,7 +320,7 @@ describe('PDFViewer Component', () => {
       // For single page PDFs, navigation controls should not be shown
       // This would need to be tested with a different mock setup
       // For now, we'll test that multi-page functionality works correctly
-      render(<PDFViewer />)
+      render(<PDFViewer />, { wrapper: TestWrapper })
       
       await waitFor(() => {
         expect(screen.getByText('Page Navigation')).toBeInTheDocument()
