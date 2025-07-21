@@ -5,6 +5,7 @@ import { RedactionProvider } from '@/context/RedactionContext'
 import { Toolbar } from '@/components/Toolbar'
 import { ConfirmationToast } from '@/components/ConfirmationToast'
 import { useRedaction } from '@/context/RedactionContext'
+import { H1, P, Small } from '@/components/ui/typography'
 
 // Import PDFViewer with no SSR to avoid server-side rendering issues
 const PDFViewer = dynamic(() => import('@/components/PDFViewer'), {
@@ -29,34 +30,26 @@ function AppContent() {
   const { toast } = state;
 
   return (
-    <main className="min-h-screen bg-background p-4 lg:p-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">
-            PDF Redaction Tool
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            View and redact sensitive information in PDF documents
-          </p>
-        </div>
-        
-        {/* Toolbar for redaction controls */}
-        <div className="mb-6">
-          <Toolbar />
-        </div>
-        
-        <div className="w-full">
-          <PDFViewer />
-        </div>
-        
-        <div className="mt-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            Use the toolbar above to toggle redaction mode and the page controls to navigate
-          </p>
-        </div>
+    <main className="min-h-screen bg-background p-6 lg:p-8">
+      <div className="text-center mb-8">
+        <H1 className="text-foreground mb-3">
+          PDF Redaction Tool
+        </H1>
+        <P className="text-muted-foreground text-lg">
+          View and redact sensitive information in PDF documents
+        </P>
       </div>
-
-      {/* Confirmation Toast */}
+      <div className="mb-8">
+        <Toolbar />
+      </div>
+      <div>
+        <PDFViewer />
+      </div>
+      <div className="mt-8 text-center">
+        <Small className="text-muted-foreground">
+          Use the toolbar above to toggle redaction mode and the page controls to navigate
+        </Small>
+      </div>
       <ConfirmationToast
         message={toast.message}
         type={toast.type}

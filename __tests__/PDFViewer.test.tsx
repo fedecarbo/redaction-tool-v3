@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import PDFViewer from '@/components/PDFViewer'
 import { RedactionProvider } from '@/context/RedactionContext'
+import { StateManagerProvider } from '@/components/ui/state-manager'
 
 // Mock react-pdf with more control
 jest.mock('react-pdf', () => {
@@ -48,7 +49,9 @@ jest.mock('lucide-react', () => ({
 
 // Wrapper component for testing with RedactionProvider
 const TestWrapper = ({ children }: { children: React.ReactNode }) => (
-  <RedactionProvider>{children}</RedactionProvider>
+  <StateManagerProvider>
+    <RedactionProvider>{children}</RedactionProvider>
+  </StateManagerProvider>
 )
 
 describe('PDFViewer Component', () => {

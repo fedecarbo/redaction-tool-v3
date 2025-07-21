@@ -3,10 +3,13 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { renderHook, act } from '@testing-library/react';
 import { Toolbar } from '@/components/Toolbar';
 import { RedactionProvider, useRedaction } from '@/context/RedactionContext';
+import { StateManagerProvider } from '@/components/ui/state-manager';
 
 // Test wrapper with context provider
 const TestWrapper = ({ children }: { children: React.ReactNode }) => (
-  <RedactionProvider>{children}</RedactionProvider>
+  <StateManagerProvider>
+    <RedactionProvider>{children}</RedactionProvider>
+  </StateManagerProvider>
 );
 
 describe('Toolbar', () => {
@@ -148,13 +151,13 @@ describe('Toolbar', () => {
     );
     
     // Check main container structure
-    const container = document.querySelector('.flex.items-center.gap-2.p-3');
+    const container = document.querySelector('.flex.items-center.justify-between.p-4');
     expect(container).toBeInTheDocument();
-    expect(container).toHaveClass('bg-card', 'border', 'rounded-lg', 'shadow-sm');
+    expect(container).toHaveClass('bg-card', 'border', 'border-border', 'rounded-lg', 'shadow-sm');
     
-    // Check inner layout
-    const innerContainer = document.querySelector('.flex.items-center.gap-2');
-    expect(innerContainer).toBeInTheDocument();
+    // Check primary controls section
+    const primaryControls = document.querySelector('.flex.items-center.gap-3');
+    expect(primaryControls).toBeInTheDocument();
   });
 
   // NEW TESTS FOR STORY 1.3 FUNCTIONALITY

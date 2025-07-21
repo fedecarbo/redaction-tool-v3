@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from 'react'
+import * as RadixDialog from '@radix-ui/react-dialog';
 import { Button } from '@/components/ui/button'
+import { OutlineButton, DangerButton } from '@/components/ui/button-system'
 import { AlertTriangle } from 'lucide-react'
 
 interface ConfirmDialogProps {
@@ -29,101 +31,31 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   className = '',
   isDestructive = false
 }) => {
-  const dialogRef = useRef<HTMLDivElement>(null)
-  const confirmButtonRef = useRef<HTMLButtonElement>(null)
-
-  // Focus management
-  useEffect(() => {
-    if (isOpen) {
-      // Focus the confirm button when dialog opens
-      confirmButtonRef.current?.focus()
-      
-      // Trap focus within dialog
-      const handleKeyDown = (event: KeyboardEvent) => {
-        if (event.key === 'Escape') {
-          onCancel()
-        }
-      }
-      
-      document.addEventListener('keydown', handleKeyDown)
-      return () => document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [isOpen, onCancel])
-
-  if (!isOpen) return null
-
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="dialog-title"
-      aria-describedby="dialog-description"
-      className={`
-        fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm
-        p-4 ${className}
-      `}
-      onClick={(e) => {
-        // Close dialog when clicking backdrop
-        if (e.target === e.currentTarget) {
-          onCancel()
-        }
-      }}
-    >
-      <div 
-        ref={dialogRef}
-        className="bg-card border rounded-lg shadow-lg max-w-md w-full p-6 animate-fade-in"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Warning Icon for destructive actions */}
-        {isDestructive && (
-          <div className="flex items-center justify-center mb-4">
-            <div className="bg-red-100 p-3 rounded-full">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
+    <RadixDialog.Root open={isOpen} onOpenChange={open => { if (!open) onCancel(); }}>
+      <RadixDialog.Portal>
+        <RadixDialog.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" />
+        <RadixDialog.Content
+          className={`bg-card border border-border rounded-lg shadow-lg max-w-md w-full p-6 animate-fade-in fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 ${className}`}
+          onPointerDownOutside={onCancel}
+        >
+          {isDestructive && (
+            <div className="flex items-center justify-center mb-6">
+              <div className="bg-red-100 p-4 rounded-full">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
             </div>
+          )}
+          <RadixDialog.Title id="dialog-title" className={`text-xl font-semibold mb-3 text-foreground ${isDestructive ? 'text-red-900' : ''}`}>{title}</RadixDialog.Title>
+          <RadixDialog.Description id="dialog-description" className={`text-sm mb-6 leading-relaxed ${isDestructive ? 'text-red-700' : 'text-muted-foreground'}`}>{description}</RadixDialog.Description>
+          <div className="flex justify-end gap-3">
+            <RadixDialog.Close asChild>
+              <Button variant="outline" size="sm" onClick={onCancel} data-testid="cancel-btn">{cancelLabel}</Button>
+            </RadixDialog.Close>
+            <Button variant={isDestructive ? 'destructive' : 'default'} size="sm" onClick={onConfirm} data-testid="confirm-btn">{confirmLabel}</Button>
           </div>
-        )}
-
-        {/* Title */}
-        <h2 
-          id="dialog-title"
-          className={`text-lg font-semibold mb-2 text-foreground ${
-            isDestructive ? 'text-red-900' : ''
-          }`}
-        >
-          {title}
-        </h2>
-        
-        {/* Description */}
-        <p 
-          id="dialog-description"
-          className={`text-sm mb-6 ${
-            isDestructive ? 'text-red-700' : 'text-muted-foreground'
-          }`}
-        >
-          {description}
-        </p>
-
-        <div className="flex justify-end gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={onCancel} 
-            data-testid="cancel-btn"
-            className={isDestructive ? 'border-red-200 text-red-600 hover:bg-red-50' : ''}
-          >
-            {cancelLabel}
-          </Button>
-          <Button 
-            size="sm" 
-            onClick={onConfirm} 
-            data-testid="confirm-btn"
-            ref={confirmButtonRef}
-            className={isDestructive ? 'bg-red-600 hover:bg-red-700 text-white' : ''}
-          >
-            {confirmLabel}
-          </Button>
-        </div>
-      </div>
-    </div>
-  )
-} 
+        </RadixDialog.Content>
+      </RadixDialog.Portal>
+    </RadixDialog.Root>
+  );
+}; 

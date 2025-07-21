@@ -157,10 +157,10 @@ export function RedactionLayer({
       <div
         key={rect.id}
         className={`
-          absolute border-2 pointer-events-none
+          absolute pointer-events-none
           ${isPreview 
-            ? 'bg-red-500/20 border-red-500 border-dashed' 
-            : 'bg-red-500/30 border-red-600'
+            ? 'bg-black/30 border-2 border-dashed border-black' 
+            : 'bg-black/60 border-2 border-black'
           }
         `}
         style={{
@@ -196,7 +196,7 @@ export function RedactionLayer({
       
       {/* Visual feedback overlay when in redact mode */}
       {isRedactMode && (
-        <div className="absolute inset-0 bg-red-500/5 pointer-events-none" />
+        <div className="absolute inset-0 bg-black/10 pointer-events-none" />
       )}
     </div>
   );
