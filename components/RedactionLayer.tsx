@@ -177,7 +177,7 @@ export function RedactionLayer({
     <div
       ref={layerRef}
       className={`
-        absolute inset-0 z-10
+        absolute inset-0 z-20
         ${isRedactMode ? 'cursor-crosshair' : 'pointer-events-none'}
         ${className}
       `}

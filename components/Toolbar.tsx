@@ -72,7 +72,7 @@ export function Toolbar({ className = '' }: ToolbarProps) {
 
         {/* View Toggle Dropdown */}
         {showViewDropdown && (
-          <div className="absolute top-full left-0 mt-1 bg-white border rounded-lg shadow-lg z-50 min-w-[200px]">
+          <div className="absolute top-full left-0 mt-1 bg-white border z-50 min-w-[200px]">
             <div className="py-1">
               <button
                 onClick={() => handleViewToggle('original')}
@@ -124,7 +124,7 @@ export function Toolbar({ className = '' }: ToolbarProps) {
 
   return (
     <>
-      <div className={`flex items-center justify-between p-4 bg-card border border-border rounded-lg shadow-sm ${className}`}>
+      <div className={`flex items-center justify-between p-4 bg-card border border-border ${className}`}>
         {/* Primary Controls Section */}
         <div className="flex items-center gap-2">
           <Button
@@ -184,6 +184,11 @@ export function Toolbar({ className = '' }: ToolbarProps) {
           )}
         </div>
 
+        {/* Center Title */}
+        <div className="absolute left-1/2 transform -translate-x-1/2">
+          <h1 className="text-2xl font-semibold text-gray-800">Fede's Redaction Tool</h1>
+        </div>
+
         {/* Secondary Controls Section */}
         <div className="flex items-center gap-2">
           {/* Download Buttons */}
@@ -197,7 +202,7 @@ export function Toolbar({ className = '' }: ToolbarProps) {
             <Download className="w-4 h-4" />Download Original
           </Button>
           <Button
-            variant="outline"
+            variant="default"
             size="sm"
             onClick={() => handleDownload('redacted')}
             disabled={!state.redactedPDF}
@@ -206,21 +211,6 @@ export function Toolbar({ className = '' }: ToolbarProps) {
             <Download className="w-4 h-4" />Download Redacted
           </Button>
           
-          {/* Mode indicator */}
-          <div className="flex items-center gap-2 text-sm ml-6 border-l border-border pl-6">
-            <div 
-              className={`
-                w-2 h-2 rounded-full transition-colors duration-normal
-                ${isRedactMode ? 'bg-red-500 animate-pulse' : 'bg-gray-300'}
-              `}
-            />
-            <span className={`
-              font-medium transition-colors duration-normal
-              ${isRedactMode ? 'text-red-600' : 'text-muted-foreground'}
-            `}>
-              {isRedactMode ? 'Click and drag to select areas to redact' : 'Click Redact Mode to start marking sensitive areas'}
-            </span>
-          </div>
         </div>
       </div>
 
